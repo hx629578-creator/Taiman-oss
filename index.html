@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Spidometr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#08090b;
+    --bg-1:#111318;
+    --panel:#15171d;
+    --panel-border:rgba(255,255,255,0.06);
+    --accent:#ff4d3d;
+    --accent-glow:rgba(255,77,61,0.55);
+    --amber:#ffb648;
+    --steel:#c7ccd6;
+    --muted:#5c6270;
+    --green:#3ddc84;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 600px 400px at 50% 0%, #1c1f27 0%, transparent 65%),
+      linear-gradient(180deg, var(--bg-0), var(--bg-1));
+    font-family:'Rajdhani', sans-serif;
+    color:var(--steel);
+    display:flex;
+    justify-content:center;
+    padding:26px 14px 50px;
+  }
+  .wrap{width:100%; max-width:420px;}
+
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+    color:var(--accent);
+    text-align:center;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  h1{
+    font-family:'Orbitron', sans-serif;
+    font-size:22px;
+    text-align:center;
+    margin:0 0 22px;
+    color:var(--steel);
+    font-weight:700;
+    letter-spacing:0.05em;
+  }
+
+  .panel{
+    background:linear-gradient(180deg, var(--panel), #0e0f13);
+    border:1px solid var(--panel-border);
+    border-radius:24px;
+    padding:22px 20px 20px;
+    box-shadow:0 24px 70px -25px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.03);
+    position:relative;
+  }
+
+  .gauge-zone{ display:flex; justify-content:center; margin-bottom:8px; }
+  svg{ display:block; overflow:visible; }
+  .needle{
+    transform-origin:150px 150px;
+    transition:transform 0.35s cubic-bezier(.22,.7,.2,1);
+    filter:drop-shadow(0 0 6px var(--accent-glow));
+  }
+  .tick-lit{ transition: stroke 0.3s ease, opacity 0.3s ease; }
+
+  .digital{
+    text-align:center;
+    margin-top:-108px;
+    margin-bottom:64px;
+    position:relative;
+    z-index:3;
+  }
+  .digital .num{
+    font-family:'Orbitron', sans-serif;
+    font-size:58px;
+    font-weight:900;
+    color:#fff;
+    line-height:1;
+    letter-spacing:0.01em;
+    text-shadow:0 0 18px rgba(255,255,255,0.18);
+    font-variant-numeric: tabular-nums;
+  }
+  .digital .unit{
+    font-family:'Rajdhani', sans-serif;
+    font-size:13px;
+    letter-spacing:0.25em;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin-top:2px;
+    font-weight:600;
+  }
+
+  .stat-row{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+  }
+  .stat{
+    flex:1;
+    background:rgba(255,255,255,0.025);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    padding:10px 8px;
+    text-align:center;
+  }
+  .stat .label{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--muted);
+    font-weight:600;
+    margin-bottom:3px;
+  }
+  .stat .value{
+    font-family:'Orbitron', sans-serif;
+    font-size:18px;
+    font-weight:700;
+    color:var(--amber);
+  }
+  .stat .value.small{ font-size:13px; color:var(--steel); font-family:'Rajdhani',sans-serif; font-weight:600;}
+
+  .controls{
+    display:flex;
+    gap:10px;
+    margin-top:16px;
+  }
+  button{
+    font-family:'Rajdhani', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    border-radius:12px;
+    border:none;
+    cursor:pointer;
+    padding:13px 10px;
+  }
+  #startBtn{
+    flex:2;
+    background:linear-gradient(180deg, #ff6a52, var(--accent));
+    color:#1a0603;
+    box-shadow:0 10px 24px -10px var(--accent-glow);
+    letter-spacing:0.03em;
+  }
+  #startBtn.active{
+    background:linear-gradient(180deg, #444, #222);
+    color:var(--steel);
+    box-shadow:none;
+  }
+  #unitBtn{
+    flex:1;
+    background:rgba(255,255,255,0.05);
+    color:var(--steel);
+    border:1px solid var(--panel-border);
+  }
+  #resetBtn{
+    flex:1;
+    background:rgba(255,255,255,0.05);
+    color:var(--steel);
+    border:1px solid var(--panel-border);
+  }
+
+  .msg{
+    text-align:center;
+    font-size:12.5px;
+    color:var(--muted);
+    margin-top:12px;
+    min-height:16px;
+  }
+  .msg.error{ color:var(--accent); }
+  .msg.ok{ color:var(--green); }
+
+  .footnote{
+    text-align:center;
+    color:var(--muted);
+    font-size:11px;
+    margin-top:18px;
+    line-height:1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">GPS Speed</div>
+  <h1>SPIDOMETR</h1>
+
+  <div class="panel">
+    <div class="gauge-zone">
+      <svg width="300" height="180" viewBox="0 0 300 180">
+        <defs>
+          <linearGradient id="redlineGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ffb648"/>
+            <stop offset="100%" stop-color="#ff4d3d"/>
+          </linearGradient>
+        </defs>
+        <g id="ticksGroup"></g>
+        <!-- needle pivot at 150,150, gauge spans 220deg from -110 to +110 -->
+        <g class="needle" id="needle">
+          <line x1="150" y1="150" x2="150" y2="42" stroke="#ff4d3d" stroke-width="3" stroke-linecap="round"/>
+          <polygon points="150,34 144,54 156,54" fill="#ff4d3d"/>
+          <line x1="150" y1="150" x2="150" y2="176" stroke="#ff4d3d" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+        </g>
+        <circle cx="150" cy="150" r="7" fill="#e8e8e8" stroke="#0e0f13" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <div class="digital">
+      <div class="num" id="speedNum">0</div>
+      <div class="unit" id="unitLabel">km/h</div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="label">Maks tezlik</div>
+        <div class="value" id="maxSpeed">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">GPS aniqlik</div>
+        <div class="value small" id="accuracy">—</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn">▶ Boshlash</button>
+      <button id="unitBtn">mph</button>
+      <button id="resetBtn">↺ Reset</button>
+    </div>
+
+    <div class="msg" id="msg">Boshlash uchun tugmani bosing</div>
+  </div>
+
+  <div class="footnote">
+    Tezlik GPS signali orqali hisoblanadi. Eng yaxshi natija uchun telefonni old oynaga yaqin joylashtiring va ochiq osmon ostida haydang.
+  </div>
+</div>
+
+<script>
+const speedNum = document.getElementById('speedNum');
+const unitLabel = document.getElementById('unitLabel');
+const maxSpeedEl = document.getElementById('maxSpeed');
+const accuracyEl = document.getElementById('accuracy');
+const needle = document.getElementById('needle');
+const startBtn = document.getElementById('startBtn');
+const unitBtn = document.getElementById('unitBtn');
+const resetBtn = document.getElementById('resetBtn');
+const msgEl = document.getElementById('msg');
+const ticksGroup = document.getElementById('ticksGroup');
+
+const MAX_KMH = 220; // gauge full scale
+const START_ANGLE = -110; // degrees, left end
+const END_ANGLE = 110; // degrees, right end
+const SWEEP = END_ANGLE - START_ANGLE;
+
+let unit = 'kmh'; // or 'mph'
+let watchId = null;
+let tracking = false;
+let maxSpeedKmh = 0;
+let lastPos = null;
+let smoothedSpeed = 0;
+
+function polar(cx, cy, r, angleDeg){
+  const rad = (angleDeg - 90) * Math.PI/180;
+  return { x: cx + r*Math.cos(rad), y: cy + r*Math.sin(rad) };
+}
+
+// build ticks: major every 20 km/h, minor every 10 km/h
+for(let v=0; v<=MAX_KMH; v+=10){
+  const angle = START_ANGLE + (v/MAX_KMH)*SWEEP;
+  const isMajor = v % 20 === 0;
+  const r1 = isMajor ? 96 : 104;
+  const r2 = 118;
+  const p1 = polar(150,150,r1,angle);
+  const p2 = polar(150,150,r2,angle);
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',p1.x); line.setAttribute('y1',p1.y);
+  line.setAttribute('x2',p2.x); line.setAttribute('y2',p2.y);
+  const inRedline = v >= MAX_KMH - 40;
+  line.setAttribute('stroke', inRedline ? '#ff4d3d' : (isMajor ? '#c7ccd6' : '#4a4f5c'));
+  line.setAttribute('stroke-width', isMajor ? 2.5 : 1.2);
+  line.setAttribute('class','tick-lit');
+  line.setAttribute('opacity', isMajor ? 0.9 : 0.55);
+  ticksGroup.appendChild(line);
+
+  if(isMajor){
+    const lp = polar(150,150,80,angle);
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x', lp.x); text.setAttribute('y', lp.y+4);
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('font-family','Orbitron, sans-serif');
+    text.setAttribute('font-size','11');
+    text.setAttribute('font-weight','700');
+    text.setAttribute('fill', inRedline ? '#ff4d3d' : '#8890a0');
+    text.textContent = v;
+    ticksGroup.appendChild(text);
+  }
+}
+// base arc
+const arcStart = polar(150,150,128,START_ANGLE);
+const arcEnd = polar(150,150,128,END_ANGLE);
+const arcPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+arcPath.setAttribute('d', `M ${arcStart.x} ${arcStart.y} A 128 128 0 1 1 ${arcEnd.x} ${arcEnd.y}`);
+arcPath.setAttribute('fill','none');
+arcPath.setAttribute('stroke','rgba(255,255,255,0.08)');
+arcPath.setAttribute('stroke-width','2');
+ticksGroup.insertBefore(arcPath, ticksGroup.firstChild);
+
+function setNeedle(kmh){
+  const clamped = Math.max(0, Math.min(MAX_KMH, kmh));
+  const angle = START_ANGLE + (clamped/MAX_KMH)*SWEEP;
+  needle.style.transform = `rotate(${angle}deg)`;
+}
+
+function displaySpeed(kmh){
+  const val = unit === 'kmh' ? kmh : kmh * 0.621371;
+  speedNum.textContent = Math.round(val);
+  unitLabel.textContent = unit === 'kmh' ? 'km/h' : 'mph';
+  const maxVal = unit === 'kmh' ? maxSpeedKmh : maxSpeedKmh * 0.621371;
+  maxSpeedEl.textContent = Math.round(maxVal);
+  setNeedle(kmh);
+}
+
+function haversineMeters(lat1, lon1, lat2, lon2){
+  const R = 6371000;
+  const toRad = d => d*Math.PI/180;
+  const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function handlePosition(pos){
+  const { latitude, longitude, speed, accuracy } = pos.coords;
+  const now = pos.timestamp;
+  let kmh = 0;
+
+  if(typeof speed === 'number' && speed !== null && speed >= 0){
+    kmh = speed * 3.6;
+  } else if(lastPos){
+    const dist = haversineMeters(lastPos.lat, lastPos.lon, latitude, longitude);
+    const dt = (now - lastPos.t) / 1000;
+    if(dt > 0){ kmh = (dist/dt) * 3.6; }
+  }
+  lastPos = { lat: latitude, lon: longitude, t: now };
+
+  // light smoothing to avoid jitter
+  smoothedSpeed = smoothedSpeed*0.35 + kmh*0.65;
+  if(smoothedSpeed < 0.6) smoothedSpeed = 0;
+
+  if(smoothedSpeed > maxSpeedKmh) maxSpeedKmh = smoothedSpeed;
+
+  accuracyEl.textContent = accuracy ? `±${Math.round(accuracy)}m` : '—';
+  displaySpeed(smoothedSpeed);
+
+  msgEl.classList.remove('error');
+  msgEl.classList.add('ok');
+  msgEl.textContent = 'GPS signal faol';
+}
+
+function handleError(err){
+  msgEl.classList.remove('ok');
+  msgEl.classList.add('error');
+  if(err.code === 1){
+    msgEl.textContent = 'Joylashuvga ruxsat berilmadi.';
+  } else if(err.code === 2){
+    msgEl.textContent = 'GPS signal topilmadi. Ochiq joyga chiqing.';
+  } else {
+    msgEl.textContent = 'GPS signal kutilmoqda...';
+  }
+}
+
+startBtn.addEventListener('click', ()=>{
+  if(tracking){
+    if(watchId !== null) navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+    tracking = false;
+    lastPos = null;
+    startBtn.textContent = '▶ Boshlash';
+    startBtn.classList.remove('active');
+    msgEl.classList.remove('ok','error');
+    msgEl.textContent = 'To\'xtatildi';
+    return;
+  }
+  if(!navigator.geolocation){
+    msgEl.classList.add('error');
+    msgEl.textContent = 'Brauzeringiz GPS ni qo\'llab-quvvatlamaydi.';
+    return;
+  }
+  tracking = true;
+  startBtn.textContent = '■ To\'xtatish';
+  startBtn.classList.add('active');
+  msgEl.classList.remove('error');
+  msgEl.textContent = 'GPS signal kutilmoqda...';
+  watchId = navigator.geolocation.watchPosition(handlePosition, handleError, {
+    enableHighAccuracy: true,
+    maximumAge: 500,
+    timeout: 8000
+  });
+});
+
+unitBtn.addEventListener('click', ()=>{
+  unit = unit === 'kmh' ? 'mph' : 'kmh';
+  unitBtn.textContent = unit === 'kmh' ? 'mph' : 'km/h';
+  displaySpeed(smoothedSpeed);
+});
+
+resetBtn.addEventListener('click', ()=>{
+  maxSpeedKmh = 0;
+  displaySpeed(smoothedSpeed);
+});
+
+displaySpeed(0);
+</script>
+</body>
+</html>
